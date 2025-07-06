@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CommentZone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #e9ebee;
+      color: #333;
+    }
+
+    header {
+      background-color: #4267B2;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: bold;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      margin-bottom: 0;
+    }
+
+    main {
+      max-width: 600px;
+      margin: 3.5rem auto 2rem auto; /* Add top space below header */
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 2rem; /* Add padding to middle content */
+    }
+
+    .post-area {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 1.5rem;
+    }
+
+    .media-preview {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .media-preview img {
+      width: 40px;
+      margin-right: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      font-size: 1rem;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      resize: vertical;
+      box-sizing: border-box;
+      height: 80px;
+    }
+
+    .button-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+
+    button {
+      background-color: #4267B2;
+      color: white;
+      padding: 8px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .comment-section {
+      margin-top: 2rem;
+    }
+
+    .comment-card {
+      background-color: #f5f6f7;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      font-size: 0.95rem;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .comment-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .comment-user {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .no-comments {
+      color: #888;
+      font-size: 0.95rem;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    @media screen and (max-width: 640px) {
+      main {
+        margin: 1rem;
+      }
+
+      textarea {
+        height: 70px;
+      }
+    }
+
+    .preview-image {
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto 1rem auto;
+      max-width: 250px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <header>CommentZone</header>
+
+  <main>
+    <div class="post-area">
+      <img 
+        src="https://www.wp-marbella.com/wp-content/uploads/2014/09/2014-Social-Media-dimensions.jpg" 
+        alt="UI Sample" 
+        class="preview-image"
+      >
+      <br>
+      <form id="commentForm">
+        <textarea id="comment" name="comment" placeholder="Add a comment..."></textarea>
+        <div class="button-wrapper">
+          <button type="submit" id="postBtn">Post</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="comment-section">
+      <h2 style="font-size: 1.2rem; margin-bottom: 10px;">Comments</h2>
+      <div id="commentList">
+        <p id="noComments" class="no-comments">No comments yet.</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('commentForm');
+    const commentList = document.getElementById('commentList');
+    const postBtn = document.getElementById('postBtn');
+    const noCommentsMsg = document.getElementById('noComments');
+
+    // Sample avatars
+    const avatars = [
+      "https://i.pravatar.cc/32?img=1",
+      "https://i.pravatar.cc/32?img=2",
+      "https://i.pravatar.cc/32?img=3",
+      "https://i.pravatar.cc/32?img=4",
+      "https://i.pravatar.cc/32?img=5",
+      "https://i.pravatar.cc/32?img=6",
+      "https://i.pravatar.cc/32?img=7"
+    ];
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const commentText = document.getElementById('comment').value.trim();
+      if (!commentText) return;
+
+      const formData = new FormData();
+      formData.append("comment", commentText);
+
+      const response = await fetch('/predict', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      const isToxic = data.final_decision === "Blocked";
+
+      if (isToxic) {
+        alert("⚠️ Toxic comment detected. Posting disabled.");
+        postBtn.disabled = true;
+      } else {
+        if (noCommentsMsg) {
+          noCommentsMsg.remove();
+        }
+
+        const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+
+        const card = document.createElement("div");
+        card.className = "comment-card";
+        card.innerHTML = `
+          <img src="${randomAvatar}" alt="avatar" class="avatar">
+          <div class="comment-content">
+            <div class="comment-user">User</div>
+            <div>${commentText}</div>
+          </div>
+        `;
+        commentList.prepend(card);
+        document.getElementById('comment').value = '';
+      }
+    };
+  </script>
+
+</body>
+</html>
